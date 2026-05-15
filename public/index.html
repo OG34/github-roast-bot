@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>GitHub Roast Bot 🔥</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0d1117;
+      --surface: #161b22;
+      --border: #30363d;
+      --text: #e6edf3;
+      --muted: #8b949e;
+      --accent: #f78166;
+      --accent2: #ffa657;
+      --btn: #238636;
+      --btn-hover: #2ea043;
+      --fire: #ff6b35;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 2rem 1rem 4rem;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 2.5rem;
+    }
+
+    header h1 {
+      font-size: clamp(2rem, 5vw, 3.5rem);
+      font-weight: 800;
+      background: linear-gradient(135deg, var(--accent) 0%, var(--accent2) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      letter-spacing: -0.02em;
+    }
+
+    header p {
+      color: var(--muted);
+      margin-top: 0.5rem;
+      font-size: 1.05rem;
+    }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 2rem;
+      width: 100%;
+      max-width: 680px;
+    }
+
+    .input-row {
+      display: flex;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+    }
+
+    .input-row input {
+      flex: 1;
+      min-width: 180px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text);
+      font-size: 1rem;
+      padding: 0.6rem 1rem;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    .input-row input:focus {
+      border-color: var(--accent);
+    }
+
+    .input-row input::placeholder {
+      color: var(--muted);
+    }
+
+    .btn {
+      background: var(--fire);
+      border: none;
+      border-radius: 8px;
+      color: #fff;
+      cursor: pointer;
+      font-size: 1rem;
+      font-weight: 600;
+      padding: 0.6rem 1.4rem;
+      transition: opacity 0.2s, transform 0.1s;
+      white-space: nowrap;
+    }
+
+    .btn:hover:not(:disabled) { opacity: 0.88; }
+    .btn:active:not(:disabled) { transform: scale(0.97); }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    .btn-copy {
+      background: var(--btn);
+      font-size: 0.875rem;
+      padding: 0.4rem 0.9rem;
+    }
+
+    .btn-copy:hover:not(:disabled) { background: var(--btn-hover); opacity: 1; }
+    .btn-copy.copied { background: #388bfd; }
+
+    /* Profile preview */
+    .profile {
+      display: none;
+      align-items: center;
+      gap: 1rem;
+      margin-top: 1.5rem;
+      padding: 1rem;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+    }
+
+    .profile.show { display: flex; }
+
+    .profile img {
+      border-radius: 50%;
+      width: 56px;
+      height: 56px;
+      flex-shrink: 0;
+      border: 2px solid var(--border);
+    }
+
+    .profile-info h3 {
+      font-size: 1rem;
+      font-weight: 600;
+    }
+
+    .profile-info p {
+      color: var(--muted);
+      font-size: 0.85rem;
+      margin-top: 0.2rem;
+    }
+
+    .profile-stats {
+      margin-left: auto;
+      text-align: right;
+      font-size: 0.8rem;
+      color: var(--muted);
+      white-space: nowrap;
+    }
+
+    /* Status / loading */
+    .status {
+      margin-top: 1.25rem;
+      font-size: 0.9rem;
+      color: var(--muted);
+      min-height: 1.2em;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .spinner {
+      display: none;
+      width: 16px;
+      height: 16px;
+      border: 2px solid var(--border);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      flex-shrink: 0;
+    }
+
+    .spinner.show { display: block; }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* Error */
+    .error-msg {
+      display: none;
+      margin-top: 1rem;
+      padding: 0.75rem 1rem;
+      background: rgba(248, 81, 73, 0.12);
+      border: 1px solid rgba(248, 81, 73, 0.4);
+      border-radius: 8px;
+      color: #ff6b6b;
+      font-size: 0.9rem;
+    }
+
+    .error-msg.show { display: block; }
+
+    /* Roast output */
+    .roast-card {
+      display: none;
+      margin-top: 2rem;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+      width: 100%;
+      max-width: 680px;
+    }
+
+    .roast-card.show { display: block; }
+
+    .roast-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.9rem 1.25rem;
+      border-bottom: 1px solid var(--border);
+      background: rgba(247, 129, 102, 0.08);
+    }
+
+    .roast-header span {
+      font-weight: 700;
+      font-size: 0.95rem;
+      color: var(--accent);
+    }
+
+    .roast-body {
+      padding: 1.5rem 1.25rem;
+      line-height: 1.75;
+      white-space: pre-wrap;
+      font-size: 0.975rem;
+      color: var(--text);
+    }
+
+    .roast-body p { margin-bottom: 1em; }
+    .roast-body p:last-child { margin-bottom: 0; }
+
+    footer {
+      margin-top: 3rem;
+      color: var(--muted);
+      font-size: 0.8rem;
+      text-align: center;
+    }
+
+    footer a { color: var(--muted); text-decoration: underline; }
+
+    @media (max-width: 480px) {
+      .profile-stats { display: none; }
+      .roast-header { flex-wrap: wrap; gap: 0.5rem; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>🔥 GitHub Roast Bot</h1>
+  <p>Enter a GitHub username and watch AI tear their profile apart.</p>
+</header>
+
+<div class="card">
+  <div class="input-row">
+    <input
+      id="usernameInput"
+      type="text"
+      placeholder="GitHub username (e.g. torvalds)"
+      autocomplete="off"
+      spellcheck="false"
+    />
+    <button class="btn" id="roastBtn" onclick="startRoast()">Roast 🔥</button>
+  </div>
+
+  <div class="profile" id="profilePreview">
+    <img id="profileAvatar" src="" alt="avatar" />
+    <div class="profile-info">
+      <h3 id="profileName"></h3>
+      <p id="profileBio"></p>
+    </div>
+    <div class="profile-stats" id="profileStats"></div>
+  </div>
+
+  <div class="status" id="statusMsg">
+    <span class="spinner" id="spinner"></span>
+    <span id="statusText"></span>
+  </div>
+
+  <div class="error-msg" id="errorMsg"></div>
+</div>
+
+<div class="roast-card" id="roastCard">
+  <div class="roast-header">
+    <span id="roastTitle">🔥 The Roast</span>
+    <button class="btn btn-copy" id="copyBtn" onclick="copyRoast()">Copy</button>
+  </div>
+  <div class="roast-body" id="roastBody"></div>
+</div>
+
+<footer>
+  Powered by <a href="https://anthropic.com" target="_blank">Claude</a> &amp; the <a href="https://docs.github.com/en/rest" target="_blank">GitHub API</a>
+</footer>
+
+<script>
+  const input = document.getElementById("usernameInput");
+  const btn = document.getElementById("roastBtn");
+  const spinner = document.getElementById("spinner");
+  const statusText = document.getElementById("statusText");
+  const errorMsg = document.getElementById("errorMsg");
+  const roastCard = document.getElementById("roastCard");
+  const roastBody = document.getElementById("roastBody");
+  const roastTitle = document.getElementById("roastTitle");
+  const profilePreview = document.getElementById("profilePreview");
+  const copyBtn = document.getElementById("copyBtn");
+
+  input.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") startRoast();
+  });
+
+  function setStatus(msg) {
+    statusText.textContent = msg;
+  }
+
+  function setLoading(on) {
+    btn.disabled = on;
+    spinner.classList.toggle("show", on);
+  }
+
+  function showError(msg) {
+    errorMsg.textContent = msg;
+    errorMsg.classList.add("show");
+  }
+
+  function clearError() {
+    errorMsg.classList.remove("show");
+  }
+
+  function showProfile(user) {
+    document.getElementById("profileAvatar").src = user.avatar_url;
+    document.getElementById("profileName").textContent =
+      user.name || user.login;
+    document.getElementById("profileBio").textContent =
+      user.bio || user.login + " on GitHub";
+    document.getElementById("profileStats").innerHTML =
+      `<div>⭐ ${user.public_repos} repos</div>` +
+      `<div>👥 ${user.followers} followers</div>`;
+    profilePreview.classList.add("show");
+  }
+
+  async function startRoast() {
+    const username = input.value.trim();
+    if (!username) {
+      input.focus();
+      return;
+    }
+
+    clearError();
+    roastCard.classList.remove("show");
+    profilePreview.classList.remove("show");
+    setLoading(true);
+
+    try {
+      // 1. Fetch GitHub user
+      setStatus("Fetching GitHub profile…");
+      const userRes = await fetch(
+        `https://api.github.com/users/${encodeURIComponent(username)}`
+      );
+      if (!userRes.ok) {
+        if (userRes.status === 404) throw new Error(`User "${username}" not found on GitHub.`);
+        throw new Error(`GitHub API error: ${userRes.status}`);
+      }
+      const user = await userRes.json();
+      showProfile(user);
+
+      // 2. Fetch repos (up to 100, sorted by updated)
+      setStatus("Fetching repos…");
+      const reposRes = await fetch(
+        `https://api.github.com/users/${encodeURIComponent(username)}/repos?per_page=100&sort=updated`
+      );
+      const repos = reposRes.ok ? await reposRes.json() : [];
+
+      // 3. Generate roast via backend
+      setStatus("Cooking up the roast… 🍖");
+      const roastRes = await fetch("/api/roast", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ user, repos }),
+      });
+
+      if (!roastRes.ok) {
+        const err = await roastRes.json().catch(() => ({}));
+        throw new Error(err.error || `Server error: ${roastRes.status}`);
+      }
+
+      const { roast } = await roastRes.json();
+
+      // 4. Display
+      roastTitle.textContent = `🔥 Roasting @${user.login}`;
+      roastBody.innerHTML = roast
+        .split(/\n\n+/)
+        .map((p) => `<p>${escHtml(p.trim())}</p>`)
+        .join("");
+      roastCard.classList.add("show");
+      roastCard.scrollIntoView({ behavior: "smooth", block: "start" });
+      setStatus("");
+      copyBtn.textContent = "Copy";
+      copyBtn.classList.remove("copied");
+    } catch (err) {
+      showError(err.message);
+      setStatus("");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function copyRoast() {
+    const text = document.getElementById("roastBody").innerText;
+    try {
+      await navigator.clipboard.writeText(text);
+      copyBtn.textContent = "Copied ✓";
+      copyBtn.classList.add("copied");
+      setTimeout(() => {
+        copyBtn.textContent = "Copy";
+        copyBtn.classList.remove("copied");
+      }, 2000);
+    } catch {
+      copyBtn.textContent = "Failed";
+    }
+  }
+
+  function escHtml(str) {
+    return str
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;");
+  }
+</script>
+
+</body>
+</html>
